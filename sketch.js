@@ -1,96 +1,90 @@
-// there's a bunch of stuff in here related to interactivity
+// controller stuffs
 
-let circles = [];
-let webcam;
+let x, y; // cursor position
+let px, py; // previous cursor position
+let brush_size;
+let draw_color; // current color
+let rainbow; // toggles rainbow mode
+let prev_buttons = [];
 
 function setup() {
-  createCanvas(400, 400);
-  background('#91C4B2');
-  webcam = createCapture(VIDEO, {flipped:true});
-  webcam.size(200,200);
-  webcam.hide(); // hides default vid elements
+  createCanvas(windowWidth, windowHeight);
+  background(200);
+  
+  x = width/2;
+  y = height/2;
+  px = x;
+  py = y;
+  draw_color = color(0);
+  strokeWeight(brush_size);
+  textAlign(CENTER, CENTER);
 }
 
 function draw() {
-  // background('#91C4B2');
-  // line(mouseX, 0, mouseX, height);
-  // line(0, mouseY, width, mouseY);
+  let gp = navigator.getGamepads()[0];
+  if(!gp){
+    fill(0);
+    noStroke();
+    textSize(16);
+    text("please connect a gamepad and press any button!", width/2, height/2);
+    return;
+  }
   
-  // if(mouseButton.left){
-  //   circle(50,50,50);
-  // }
-  // if(mouseButton.right){
-  //   square(25,25,50);
-  // }
-  // if(mouseButton.center){
-  //   triangle(25,75,50,30,80,75);
-  // }
+  // left joystick
+  let deadzone = 0.15;
+  let dx = abs(gp.axes[0]) > deadzone ? gp.axes[0] : 0;
+  let dy = abs(gp.axes[1]) > deadzone ? gp.axes[1] : 0;
+  let speed = 6;
+  px = x;
+  py = y;
+  x+= dx * speed;
+  y+= dy * speed;
+  x = constrain(x,0,width);
+  y = constrain(y,0,height);
   
-  // textAlign(CENTER);
-  // textSize(12);
-  // text(mouseIsPressed,25,80);
-  // text(key,width/2, height/2);
+  // rainbow mode :)
+  if(rainbow){
+    draw_color = color(random(255), random(255), random(255));
+  }
+  stroke(draw_color);
+  strokeWeight(brush_size);
   
-  // if(key==='w'){
-  //   circle(40,40,30);
-  // }
-  // if(key==='a'){
-  //   circle(80,80,30);
-  // }
-  // if(key==='s'){
-  //   circle(120,120,30);
-  // }
-  // if(key==='d'){
-  //   circle(160,160,30);
-  // }
+  line(px, py, x, y);
   
-  // if(keyCode === 40){ // arrow down
-  //   fill(random(180), random(255), random(90));
-  // }
+  //triggers
+  let left_trig = gp.buttons[6].value;
+  let right_trig = gp.buttons[7].value;
   
-  // if(keyIsDown(LEFT_ARROW)){
-  //   fill('#ED864E');
-  // } // the newest way to do it
+  brush_size = map(right_trig - left_trig, -1, 1, 1, 30);
+  brush_size = constrain(brushSize,1,30);
+  handleButtons(gp);
   
-  // for (let circle of circles){
-  //   fill(circle.rand_color);
-  //   ellipse(circle.x, circle.y, 50);
-  // }
-  
-  // if(mouseIsPressed){
-  //   let newCircle = {
-  //     x:mouseX,
-  //     y:mouseY,
-  //     rand_color:color(random(255), random(255), random(255))
-  //   };
-  // circles.push(newCircle);
-  //   }
-  
-  // body:
-  // fill('#54C8D6');
-  // ellipse(200,300,100,150);
-  
-  // hat:
-  // push();
-  // translate(200,200);
-  // fill('#5481D6');
-  // scale(2);
-  // arc(0,0,100,100,PI,0,CHORD);
-  // pop();
-  
-  // head:
-  // fill('#54C5D6');
-  // ellipse(200,200,80);
-  
-  image(webcam,0,0);
-  filter(POSTERIZE, 5);
   }
 
-function mousePressed(){
-  // let newCircle = {
-  //     x:mouseX,
-  //     y:mouseY,
-  //     rand_color:color(random(255), random(255), random(255))
-  //   };
-  // circles.push(newCircle);
+function handleButtons(gp){
+  gp.buttons.forEach((button, index) => {
+    let curr_pressed = button.pressed;
+    let prev_pressed = prev_buttons[index] || false;
+    
+    if(curr_pressed && !prev_pressed){
+      switch(index){
+        case 0: // a
+          draw_color = color(random(255), random(255), random(255));
+          rainbow = false;
+          break;
+        case 1: // b
+          background(240);
+          break;
+        case 2: // y
+          rainbow = !rainbow;
+          break;
+        case 3: // x
+          saveCanvas('etcha_gp', "png");
+          break;
+      }
+    }
+    
+    prev_buttons[index] = curr_pressed;
+    
+  })
 }
